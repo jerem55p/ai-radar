@@ -233,6 +233,8 @@ def to_view(r: dict, cfg: dict, series: list[int | None] | None, now: datetime) 
     if r.get("suspicious"):
         badges.append(("⚠️ étoiles suspectes", "warn"))
     pushed = (r.get("pushed_at") or "")[:10]
+    if r.get("details", "").startswith((r.get("one_liner") or "@@@").rstrip("…")):
+        r = {**r, "details": ""}  # texte de secours : la phrase courte est déjà le début de la description
     return {**r, "cat_id": cat["id"], "cat_emoji": cat["emoji"], "cat_name": cat["name"], "badges": badges,
             "stars_fmt": fmt_int(r["stars"]), "s24": gain24(r), "s7": ("≥" if not r.get("stars_7d_known", True) else "") + "+" + fmt_int(r["stars_7d"]),
             "spark": sparkline(series or []), "age": age_label(r.get("age_days", 0)),

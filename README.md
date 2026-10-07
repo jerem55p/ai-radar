@@ -22,7 +22,25 @@ Légende : 🧪 facile à essayer · 🔥HN discuté sur Hacker News · 🆕 nou
 
 ---
 
-## Mise en place pas à pas
+## Mise en place par e-mail (Gmail) — configuration actuelle
+
+`config.yaml` est réglé sur `channel: email`. Tu reçois le rapport du jour (et le récap du dimanche) par e-mail, avec un gabarit HTML pensé pour les boîtes mail (styles en ligne, sans JavaScript). Pour que GitHub puisse envoyer à ta place :
+
+1. Active la **validation en deux étapes** sur ton compte Google, puis crée un **mot de passe d'application** : https://myaccount.google.com/apppasswords (nom : `AI Radar`). Google te donne 16 lettres.
+2. Enregistre-le dans GitHub avec le script fourni (saisie masquée, rien n'est écrit sur le disque) :
+
+```powershell
+.\scripts\setup_email.ps1
+```
+
+Les autres réglages (`SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `EMAIL_TO`) sont déjà enregistrés. Pour changer de destinataire : `gh secret set EMAIL_TO -R <user>/ai-radar`.
+Pour repasser à Telegram : `channel: telegram` dans `config.yaml` et les étapes ci-dessous.
+
+---
+
+## Mise en place Telegram (optionnelle)
+
+### Pas à pas
 
 Compte une vingtaine de minutes. Il te faut un compte GitHub et l'application Telegram.
 
