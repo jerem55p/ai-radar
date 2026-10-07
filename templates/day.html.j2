@@ -1,0 +1,81 @@
+{% extends "base.html.j2" %}
+{% block title %}AI Radar — {{ day_label }}{% endblock %}
+{% block subtitle %}Top {{ top_n }} IA open source · {{ day_label }}{% endblock %}
+{% macro card(r, podium=False) %}
+<article class="card{% if podium %} podium{% endif %}" data-cat="{{ r.cat_id }}">
+  <div class="head">
+    <span class="rank">#{{ r.rank }}</span>
+    <a class="name" href="{{ r.html_url }}" rel="noopener">{{ r.full_name }}</a>
+  </div>
+  <div class="cat">{{ r.cat_emoji }} {{ r.cat_name }}</div>
+  <p class="one">{{ r.one_liner }}</p>
+  {% if r.badges %}<div class="badges">{% for text, cls in r.badges %}<span class="badge {{ cls }}">{{ text }}</span>{% endfor %}</div>{% endif %}
+  {% if r.details and r.details != r.one_liner %}<p>{{ r.details }}</p>{% endif %}
+  <p class="why">📈 {{ r.why_rising }}</p>
+  <div class="row">
+    <div class="nums">
+      <span>⭐ <b>{{ r.stars_fmt }}</b></span>
+      <span>24 h : <b>{{ r.s24 }}</b></span>
+      <span>7 j : <b>{{ r.s7 }}</b></span>
+    </div>
+    {{ r.spark | safe }}
+  </div>
+  <div class="meta">
+    <span>{{ r.language or "—" }}</span><span>Licence {{ r.license_label }}</span><span>Âge {{ r.age }}</span>
+    <span>Dernier commit {{ r.pushed }}</span>
+    <a href="{{ r.html_url }}" rel="noopener">Dépôt ↗</a>
+    {% if r.hn_url %}<a href="{{ r.hn_url }}" rel="noopener">Discussion HN ↗</a>{% endif %}
+  </div>
+</article>
+{% endmacro %}
+{% block body %}
+<nav class="links">
+  <a href="index.html#archives">🗂️ Archives</a>
+  <span class="muted">Données du {{ day }}</span>
+</nav>
+<p class="legend">🧪 facile à essayer · 🔥HN discuté sur Hacker News · 🆕 nouveau dans le top · ↑↓ variation de rang vs hier · 🔁 dans le top depuis ≥ 3 jours · 💤 en perte de vitesse</p>
+
+<div class="chips" role="group" aria-label="Filtrer par catégorie">
+  <button class="chip" type="button" data-filter="all" aria-pressed="true">Tout ({{ items|length }})</button>
+  {% for c in cats %}
+  <button class="chip" type="button" data-filter="{{ c.id }}" aria-pressed="false">{{ c.emoji }} {{ c.name }}</button>
+  {% endfor %}
+</div>
+
+<h2>🏆 Podium</h2>
+{% for r in podium %}{{ card(r, True) }}{% endfor %}
+
+{% if rest %}<h2>Le reste du top {{ top_n }}</h2>
+{% for r in rest %}{{ card(r) }}{% endfor %}{% endif %}
+
+{% if trends %}
+<h2>Ce qui bouge par catégorie</h2>
+<ul class="plain">
+{% for c in cats %}{% if trends.get(c.id) %}<li><b>{{ c.emoji }} {{ c.name }}</b><br><span class="muted">{{ trends[c.id] }}</span></li>{% endif %}{% endfor %}
+</ul>
+{% endif %}
+
+{% if watch %}
+<h2>👀 À surveiller (rangs {{ watch[0].rank }} à {{ watch[-1].rank }})</h2>
+<ul class="plain">
+{% for w in watch %}<li>#{{ w.rank }} <a href="{{ w.html_url }}" rel="noopener">{{ w.full_name }}</a> <span class="muted">+{{ w.s24 }}⭐ · {{ w.cat_emoji }} {{ w.one_liner }}</span></li>{% endfor %}
+</ul>
+{% endif %}
+
+{% if archives is not none %}
+<h2 id="archives">🗂️ Archives</h2>
+<ul class="plain">
+{% for a in archives %}<li><a href="{{ a.file }}">{{ a.label }}</a>{% if a.kind == "week" %} <span class="badge">récap</span>{% endif %}</li>{% endfor %}
+</ul>
+{% endif %}
+{% endblock %}
+{% block script %}
+var chips = document.querySelectorAll(".chip"), cards = document.querySelectorAll("article.card");
+chips.forEach(function (chip) {
+  chip.addEventListener("click", function () {
+    var f = chip.getAttribute("data-filter");
+    chips.forEach(function (c) { c.setAttribute("aria-pressed", c === chip ? "true" : "false"); });
+    cards.forEach(function (card) { card.hidden = !(f === "all" || card.getAttribute("data-cat") === f); });
+  });
+});
+{% endblock %}

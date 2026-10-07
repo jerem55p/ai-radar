@@ -1,0 +1,35 @@
+{% extends "base.html.j2" %}
+{% block title %}AI Radar — récap de la semaine{% endblock %}
+{% block subtitle %}Récap de la semaine · {{ start_label }} → {{ end_label }}{% endblock %}
+{% block body %}
+<nav class="links"><a href="index.html#archives">🗂️ Archives</a></nav>
+
+<h2>🏆 Top 10 de la semaine</h2>
+<p class="muted small">Classé par étoiles gagnées sur 7 jours.</p>
+{% for r in top10 %}
+<article class="card{% if loop.index <= 3 %} podium{% endif %}">
+  <div class="head"><span class="rank">{{ loop.index }}.</span><a class="name" href="{{ r.html_url }}" rel="noopener">{{ r.full_name }}</a></div>
+  <div class="cat">{{ r.cat_emoji }} {{ r.cat_name }}</div>
+  {% if r.one_liner %}<p class="one">{{ r.one_liner }}</p>{% endif %}
+  <div class="nums"><span>7 j : <b>+{{ r.gain }}</b></span><span>Jours dans le top 20 : <b>{{ r.days_in_top }}</b></span></div>
+</article>
+{% else %}<p class="muted">Pas encore de données pour cette semaine.</p>
+{% endfor %}
+
+{% if enough %}
+<h2>✅ Se confirment</h2>
+<p class="muted small">Présents au moins 4 jours sur 7 dans le top 20.</p>
+<ul class="plain">{% for r in confirmed %}<li><a href="{{ r.html_url }}" rel="noopener">{{ r.full_name }}</a> <span class="muted">· {{ r.days_in_top }} jours · +{{ r.gain }}⭐</span></li>{% else %}<li class="muted">Aucun projet cette semaine.</li>{% endfor %}</ul>
+
+<h2>💨 Feux de paille</h2>
+<p class="muted small">Un seul passage dans le top 20, avec un gros pic.</p>
+<ul class="plain">{% for r in flashes %}<li><a href="{{ r.html_url }}" rel="noopener">{{ r.full_name }}</a> <span class="muted">· +{{ r.gain }}⭐</span></li>{% else %}<li class="muted">Aucun projet cette semaine.</li>{% endfor %}</ul>
+{% else %}
+<p class="muted">ℹ️ L'historique est encore court : les listes « se confirment » et « feux de paille » apparaîtront après quelques jours.</p>
+{% endif %}
+
+{% if top_category %}
+<h2>🔥 Catégorie la plus active</h2>
+<p>{{ top_category }} — <b>+{{ top_gain }}</b> étoiles cumulées sur les projets du top 20.</p>
+{% endif %}
+{% endblock %}

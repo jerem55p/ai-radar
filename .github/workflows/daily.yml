@@ -1,0 +1,77 @@
+name: AI Radar quotidien
+
+on:
+  schedule:
+    # Le cron GitHub est en UTC. Deux déclenchements couvrent l'heure d'été et l'heure d'hiver :
+    #   06:00 UTC = 08:00 à Paris en été (CEST, UTC+2)
+    #   07:00 UTC = 08:00 à Paris en hiver (CET, UTC+1)
+    # Le script ignore le déclenchement qui n'est pas le bon (voir README, « Heure d'été / d'hiver »).
+    - cron: "0 6 * * *"
+    - cron: "0 7 * * *"
+  workflow_dispatch:        # lancement manuel depuis l'onglet Actions
+    inputs:
+      weekly:
+        description: "Forcer le récap hebdomadaire"
+        type: boolean
+        default: false
+
+# Une seule exécution à la fois (évite deux commits simultanés)
+concurrency:
+  group: ai-radar
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  radar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - run: pip install -r requirements.txt
+
+      - name: Tests (informatif : ne bloque pas l'envoi du jour)
+        continue-on-error: true
+        run: python -m pytest -q
+
+      - name: Générer et envoyer le radar
+        id: run
+        continue-on-error: true       # le commit ci-dessous doit avoir lieu même si l'envoi échoue
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_PAT: ${{ secrets.GH_PAT }}                       # optionnel : quota 5000 req/h
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }} # optionnel : résumés en français
+        run: |
+          if [ "${{ inputs.weekly }}" = "true" ]; then ARGS="--weekly"; else ARGS=""; fi
+          python -m src.main $ARGS
+
+      # Commit quotidien : sauvegarde l'état ET empêche GitHub de désactiver le cron après 60 jours
+      # d'inactivité. `--allow-empty` garantit qu'un commit existe à chaque exécution.
+      - name: Commit du snapshot
+        if: ${{ steps.run.outputs.skipped != 'true' }}
+        run: |
+          set -e
+          git config user.name "ai-radar[bot]"
+          git config user.email "ai-radar@users.noreply.github.com"
+          git add -A data docs
+          git commit --allow-empty -m "chore: snapshot $(TZ=Europe/Paris date +%Y-%m-%d)"
+          for i in 1 2 3; do
+            git pull --rebase -X theirs origin "${GITHUB_REF_NAME}" && git push && exit 0
+            sleep 5
+          done
+          echo "::error::push impossible après 3 essais" && exit 1
+
+      - name: Échec de l'étape principale ?
+        if: ${{ steps.run.outcome == 'failure' }}
+        run: |
+          echo "::error::AI Radar a échoué (voir les logs de l'étape « Générer et envoyer le radar »)"
+          exit 1

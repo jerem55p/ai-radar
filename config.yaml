@@ -1,0 +1,336 @@
+# ============================================================
+# AI Radar — configuration
+# Tous les seuils, poids, topics, catégories et quotas sont ici.
+# ============================================================
+
+# --- Paramètres personnels -----------------------------------
+user:
+  github_user: "jerem55p"     # TON nom d'utilisateur GitHub (sert à construire l'URL de la page)
+  repo_name: "ai-radar"         # nom du dépôt public
+  pages_url: ""                 # laisse vide : https://<github_user>.github.io/<repo_name>/
+  timezone: "Europe/Paris"
+  send_hour: 8                  # heure d'envoi (heure de Paris) — voir README pour le cron
+
+channel: telegram               # telegram | email
+
+# --- Taille du classement et quotas ---------------------------
+top_n: 20
+podium: 3
+watch_count: 10                 # « À surveiller » : rangs 21 à 30
+max_per_category: 5
+max_per_owner: 2
+rescue_ratio: 0.6               # une catégorie vide récupère une place si score >= 60 % du 20e
+
+# --- Quota API GitHub ----------------------------------------
+github:
+  max_requests: 900             # plafond dur par exécution (GITHUB_TOKEN ≈ 1000/h, PAT = 5000/h)
+  search_interval: 2.2          # secondes entre deux appels Search (limite : 30/min)
+  workers: 4                    # threads pour les mesures par dépôt
+  events_max_pages: 3           # pages de 100 événements lues par dépôt pour reconstituer les étoiles récentes
+  trending_detail_cap: 100      # dépôts Trending complétés via /repos/{o}/{r}
+
+# --- Collecte -------------------------------------------------
+collect:
+  trending:
+    enabled: true
+    periods: [daily, weekly]
+    languages: ["", python, typescript, javascript, rust, go, jupyter-notebook, "c++"]
+    delay: 1.0
+  search:
+    created_days: 30
+    created_min_stars: 30
+    pushed_days: 3
+    pushed_min_stars: 200
+    per_page: 100
+    topics:
+      - llm
+      - large-language-models
+      - ai
+      - artificial-intelligence
+      - machine-learning
+      - deep-learning
+      - generative-ai
+      - ai-agents
+      - agents
+      - agentic-ai
+      - rag
+      - mcp
+      - model-context-protocol
+      - transformers
+      - diffusion
+      - stable-diffusion
+      - computer-vision
+      - nlp
+      - speech-recognition
+      - text-to-speech
+      - voice
+      - fine-tuning
+      - llm-inference
+      - vector-database
+      - ollama
+      - langchain
+      - claude
+      - openai
+      - multimodal
+      - coding-assistant
+      - ai-safety
+      - llmops
+  followed:
+    days: 7                     # on réintègre les dépôts classés dans le top `top` ces N derniers jours
+    top: 60
+
+# --- Filtres ---------------------------------------------------
+filters:
+  min_push_days: 14
+  min_stars_24h: 40             # signal minimal : sous ce gain sur 24 h, un dépôt n'entre pas dans le classement
+  licenses:                     # liste blanche OSI (spdx_id)
+    - MIT
+    - Apache-2.0
+    - BSD-2-Clause
+    - BSD-3-Clause
+    - ISC
+    - MPL-2.0
+    - GPL-2.0
+    - GPL-3.0
+    - LGPL-2.1
+    - LGPL-3.0
+    - AGPL-3.0
+    - EPL-2.0
+    - Unlicense
+    - 0BSD
+    - Zlib
+    - BSL-1.0
+  # Un dépôt est « lié à l'IA » s'il a un de ces topics…
+  ai_topics:
+    - llm
+    - llms
+    - large-language-models
+    - large-language-model
+    - ai
+    - artificial-intelligence
+    - machine-learning
+    - deep-learning
+    - generative-ai
+    - genai
+    - ai-agents
+    - ai-agent
+    - agents
+    - agentic-ai
+    - agentic
+    - rag
+    - mcp
+    - mcp-server
+    - mcp-client
+    - model-context-protocol
+    - transformers
+    - diffusion
+    - stable-diffusion
+    - computer-vision
+    - nlp
+    - speech-recognition
+    - text-to-speech
+    - tts
+    - stt
+    - voice
+    - fine-tuning
+    - llm-inference
+    - vector-database
+    - ollama
+    - langchain
+    - claude
+    - openai
+    - gpt
+    - multimodal
+    - coding-assistant
+    - ai-safety
+    - llmops
+    - neural-network
+    - reinforcement-learning
+    - chatbot
+    - chatgpt
+    - llama
+    - gemini
+    - embeddings
+    - prompt-engineering
+  # … ou un de ces mots (forts) dans la description. Les mots faibles déclenchent une vérification du README.
+  ai_keywords_strong:
+    - "\\bAI\\b"
+    - "artificial intelligence"
+    - "machine learning"
+    - "deep learning"
+    - "\\bLLMs?\\b"
+    - "\\bGPT"
+    - "openai"
+    - "anthropic"
+    - "claude"
+    - "gemini"
+    - "ollama"
+    - "\\bRAG\\b"
+    - "\\bMCP\\b"
+    - "model context protocol"
+    - "diffusion"
+    - "transformers?\\b"
+    - "neural"
+    - "embeddings?"
+    - "fine-?tun"
+    - "text-to-speech"
+    - "speech recognition"
+    - "computer vision"
+    - "generative"
+    - "agentic"
+    - "copilot"
+    - "chatbot"
+    - "language models?"
+  ai_keywords_weak:
+    - "\\bagents?\\b"
+    - "\\bmodels?\\b"
+    - "\\bvision\\b"
+    - "\\bvoice\\b"
+    - "\\bspeech\\b"
+    - "\\bchat\\b"
+    - "\\binference\\b"
+  readme_min_strong_hits: 2     # nb de mots forts dans le README pour valider un cas limite
+  # Exclusions « pas de vrais projets » (regex, insensibles à la casse)
+  exclude_lists: true
+  exclude_name_patterns:
+    - "(^|[-_/])awesome([-_]|$)"
+    - "(^|[-_/])(system-)?prompts($|[-_])"
+    - "(^|[-_/])(cheat-?sheets?|roadmaps?|tutorials?|courses?)($|[-_])"
+    - "(^|[-_/])(interview|papers|reading-list)($|[-_])"
+  exclude_description_patterns:
+    - "^\\s*(an?\\s+|the\\s+)?(awesome|curated)\\b.{0,40}\\b(list|collection|resources|links)\\b"
+    - "\\bcurated (list|collection)\\b"
+    - "\\b(list|collection|library) of\\b.{0,40}\\b(prompts|papers|resources|tutorials|courses|articles|books|links)\\b"
+    - "^\\s*(an?\\s+)?(free\\s+)?(course|tutorial|guide|roadmap|cheat ?sheet|book|handbook)\\b"
+    - "\\bfree (books|courses)\\b"
+    - "\\binterview questions\\b"
+  exclude_topics:
+    - awesome
+    - awesome-list
+    - awesomelist
+    - prompts
+    - chatgpt-prompts
+    - prompt-library
+    - cheatsheet
+    - tutorial
+    - tutorials
+    - course
+    - roadmap
+    - papers
+    - interview-questions
+  # Étoiles suspectes : rétrogradé (score × penalty), pas supprimé
+  suspicious:
+    min_stars: 1000
+    max_fork_ratio: 0.005
+    penalty: 0.5
+
+# --- Pré-classement ---------------------------------------------
+prerank:
+  keep: 80                      # nb de dépôts qui passent aux mesures coûteuses
+  enrich_pool: 40               # nb de dépôts dont on lit le README (catégorisation + badge 🧪)
+
+# --- Score -------------------------------------------------------
+score:
+  weights:
+    velocity_abs: 0.30
+    velocity_rel: 0.25
+    acceleration: 0.15
+    freshness: 0.10
+    activity: 0.10
+    buzz: 0.10
+  fresh_days: 60
+  clip_percentile: 0.95         # écrête les ratios (vélocité relative, accélération) avant normalisation
+  release_recent_days: 7
+  hn_days: 7
+  hn_badge_min_points: 10        # le badge 🔥HN n'apparaît qu'à partir de ce nombre de points
+
+# --- Nouveauté / répétitions ------------------------------------
+repeat:
+  streak_badge_days: 3          # 🔁 si dans le top depuis >= N jours
+  stale_after_days: 7           # anti-monotonie : > N jours d'affilée …
+  decline_days: 3               # … et stars_24h en baisse N jours de suite → sort du message Telegram
+
+history_days: 60                # purge des données plus anciennes
+
+# --- « Facile à essayer » 🧪 -------------------------------------
+easy_try_patterns:
+  - "pip install"
+  - "pipx install"
+  - "uv (tool )?(pip )?install"
+  - "uvx "
+  - "npm i(nstall)?\\b"
+  - "npx "
+  - "docker run"
+  - "docker compose up"
+  - "brew install"
+  - "colab\\.research\\.google\\.com"
+  - "huggingface\\.co/spaces"
+  - "live demo"
+  - "try it"
+  - "playground"
+
+# --- Résumés (API Claude, optionnelle) ---------------------------
+enrich:
+  model: "claude-haiku-4-5-20251001"
+  chunk_size: 22                # dépôts par appel (≈ 2 appels au premier jour)
+  readme_chars: 3000
+  max_retries: 2
+
+# --- Catégories (liste fixe) -------------------------------------
+# `topics` (poids 3) et `keywords` (poids 1) servent au classement de secours sans API Claude.
+default_category: apps
+categories:
+  - id: agents
+    emoji: "🤖"
+    name: "Agents & automatisation"
+    description: "frameworks d'agents, agents navigateur ou ordinateur, orchestration multi-agents"
+    topics: [ai-agents, ai-agent, agents, agentic-ai, agentic, multi-agent, autonomous-agents, agent-framework, browser-automation, computer-use, workflow-automation, langgraph, crewai, autogen, agentic-workflow, ai-automation]
+    keywords: ["\\bagents?\\b", "agentic", "autonomous", "browser[- ]use", "computer[- ]use", "orchestrat", "workflows?\\b", "automat"]
+  - id: dev
+    emoji: "💻"
+    name: "Code & outils développeur"
+    description: "assistants de code, serveurs et clients MCP, SDK, CLI"
+    topics: [mcp, mcp-server, mcp-client, model-context-protocol, coding-assistant, code-generation, copilot, cli, sdk, developer-tools, devtools, vscode-extension, claude-code, cursor, code-review, ai-coding]
+    keywords: ["coding", "code (assistant|generation|review)", "\\bMCP\\b", "\\bSDK\\b", "\\bCLI\\b", "developers?\\b", "\\bIDE\\b", "terminal", "claude code"]
+  - id: models
+    emoji: "🧠"
+    name: "Modèles & entraînement"
+    description: "nouveaux modèles open source, fine-tuning, RL, distillation"
+    topics: [fine-tuning, finetuning, reinforcement-learning, rlhf, distillation, pretraining, training, llm-training, foundation-model, lora, peft, grpo, open-source-model, language-model, text-generation]
+    keywords: ["fine-?tun", "training", "pre-?train", "reinforcement", "distill", "open[- ]weights?", "checkpoint", "\\bLoRA\\b", "model family"]
+  - id: inference
+    emoji: "⚡"
+    name: "Inférence & IA locale"
+    description: "serveurs d'inférence, quantization, exécution en local ou sur mobile"
+    topics: [llm-inference, inference, quantization, ollama, llama-cpp, llamacpp, gguf, local-llm, on-device, mlx, vllm, tensorrt, onnx, webgpu, edge-ai, model-serving, cuda, llm-serving]
+    keywords: ["inference", "quantiz", "locally", "local (llm|ai)", "on-device", "run (llms|models)", "serving", "\\bGPU\\b", "llama\\.cpp", "gguf", "offline"]
+  - id: rag
+    emoji: "📚"
+    name: "RAG, données & mémoire"
+    description: "bases vectorielles, parsing de documents, mémoire d'agent, graphes de connaissances"
+    topics: [rag, vector-database, vector-search, embeddings, knowledge-graph, graphrag, memory, agent-memory, document-parsing, ocr, pdf-parsing, semantic-search, retrieval, retrieval-augmented-generation]
+    keywords: ["\\bRAG\\b", "retrieval", "vector", "embedding", "knowledge graph", "memory", "document (pars|process)", "\\bpdf\\b", "\\bOCR\\b"]
+  - id: image
+    emoji: "🎨"
+    name: "Image & vidéo"
+    description: "génération, édition, vision"
+    topics: [stable-diffusion, diffusion, image-generation, text-to-image, video-generation, text-to-video, computer-vision, comfyui, image-editing, segmentation, object-detection, vision, flux, vlm, 3d]
+    keywords: ["\\bimages?\\b", "\\bvideos?\\b", "diffusion", "vision", "visual", "\\b3D\\b", "comfyui", "text-to-image", "segmentation", "detection"]
+  - id: audio
+    emoji: "🎙️"
+    name: "Audio & voix"
+    description: "TTS, STT, clonage de voix, musique"
+    topics: [text-to-speech, tts, speech-recognition, speech-to-text, stt, asr, voice, voice-cloning, voice-assistant, whisper, music-generation, audio]
+    keywords: ["speech", "voice", "\\bTTS\\b", "text-to-speech", "audio", "music", "whisper", "transcri", "podcast"]
+  - id: apps
+    emoji: "🧩"
+    name: "Applications & interfaces"
+    description: "interfaces de chat, applications finales prêtes à l'emploi"
+    topics: [chatbot, chat-ui, chatgpt, webui, self-hosted, desktop-app, llm-ui, ai-assistant, ai-app, open-webui, chat, assistant]
+    keywords: ["chat (ui|interface)", "web ?ui", "interface", "self-hosted", "desktop app", "\\bapp\\b", "assistant", "platform", "chatbot"]
+  - id: eval
+    emoji: "🔬"
+    name: "Évaluation, sécurité & observabilité"
+    description: "benchmarks, garde-fous, traçage, red teaming"
+    topics: [ai-safety, llmops, observability, llm-evaluation, evaluation, benchmark, guardrails, red-teaming, tracing, llm-security, prompt-injection, monitoring, jailbreak, alignment, interpretability, llm-observability]
+    keywords: ["\\beval", "benchmark", "guardrail", "safety", "observab", "tracing", "red[- ]team", "security", "jailbreak", "monitor"]
