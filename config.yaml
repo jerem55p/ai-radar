@@ -11,7 +11,7 @@ user:
   timezone: "Europe/Paris"
   send_hour: 8                  # heure d'envoi (heure de Paris) — voir README pour le cron
 
-channel: telegram               # telegram | email
+channel: email                  # telegram | email
 
 # --- Taille du classement et quotas ---------------------------
 top_n: 20

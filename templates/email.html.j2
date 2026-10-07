@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="fr">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="color-scheme" content="light dark"><title>{{ title }}</title></head>
+<body style="margin:0;padding:0;background:#f6f7f9;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f6f7f9;">
+<tr><td align="center" style="padding:16px 8px;">
+<table role="presentation" width="640" cellpadding="0" cellspacing="0" style="max-width:640px;width:100%;font-family:-apple-system,'Segoe UI',Roboto,Arial,sans-serif;color:#16191d;font-size:15px;line-height:1.5;">
+
+<tr><td style="padding:8px 4px 4px;">
+  <div style="font-size:22px;font-weight:700;">🤖 AI Radar</div>
+  <div style="color:#5d6671;font-size:14px;">{{ subtitle }}</div>
+</td></tr>
+
+{% if kind == "daily" %}
+<tr><td style="padding:12px 4px 4px;font-size:16px;font-weight:700;">🏆 Podium</td></tr>
+{% for r in podium %}
+<tr><td style="padding:4px 0;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#fff7e0;border:1px solid #f0d78a;border-radius:12px;">
+  <tr><td style="padding:12px 14px;">
+    <div><span style="color:#5d6671;font-weight:700;">#{{ r.rank }}</span>
+      <a href="{{ r.html_url }}" style="color:#2f6df6;font-weight:700;text-decoration:none;">{{ r.full_name }}</a></div>
+    <div style="font-size:12px;color:#5d6671;">{{ r.cat_emoji }} {{ r.cat_name }}</div>
+    <div style="font-weight:600;margin:6px 0 2px;">{{ r.one_liner }}</div>
+    {% if r.details and r.details != r.one_liner %}<div>{{ r.details }}</div>{% endif %}
+    <div style="color:#5d6671;font-size:13px;margin-top:4px;">📈 {{ r.why_rising }}</div>
+    <div style="font-size:13px;margin-top:6px;">⭐ <b>{{ r.stars_fmt }}</b> · 24 h : <b>{{ r.s24 }}</b> · 7 j : <b>{{ r.s7 }}</b>
+      {% for text in r.badge_texts %} · {{ text }}{% endfor %}</div>
+  </td></tr></table>
+</td></tr>
+{% endfor %}
+
+{% for c in cats %}
+<tr><td style="padding:16px 4px 2px;font-size:16px;font-weight:700;">{{ c.emoji }} {{ c.name }}</td></tr>
+{% if trends.get(c.id) %}<tr><td style="padding:0 4px 6px;color:#5d6671;font-size:13px;">↳ {{ trends[c.id] }}</td></tr>{% endif %}
+{% for r in by_cat[c.id] %}
+<tr><td style="padding:6px 0;border-top:1px solid #e2e5e9;">
+  <div><span style="color:#5d6671;">#{{ r.rank }}</span>
+    <a href="{{ r.html_url }}" style="color:#2f6df6;font-weight:600;text-decoration:none;">{{ r.full_name }}</a>
+    <span style="color:#5d6671;font-size:13px;">{{ r.s24 }}⭐{% for text in r.badge_texts %} · {{ text }}{% endfor %}</span></div>
+  <div>{{ r.one_liner }}</div>
+</td></tr>
+{% endfor %}
+{% endfor %}
+
+{% if watch %}
+<tr><td style="padding:18px 4px 2px;font-size:16px;font-weight:700;">👀 À surveiller</td></tr>
+{% for w in watch %}
+<tr><td style="padding:3px 4px;font-size:14px;">#{{ w.rank }} <a href="{{ w.html_url }}" style="color:#2f6df6;text-decoration:none;">{{ w.full_name }}</a>
+  <span style="color:#5d6671;">+{{ w.s24 }}⭐ · {{ w.one_liner }}</span></td></tr>
+{% endfor %}
+{% endif %}
+
+{% else %}
+<tr><td style="padding:12px 4px 4px;font-size:16px;font-weight:700;">🏆 Top 10 de la semaine <span style="font-weight:400;color:#5d6671;font-size:13px;">(étoiles gagnées sur 7 jours)</span></td></tr>
+{% for r in top10 %}
+<tr><td style="padding:6px 0;border-top:1px solid #e2e5e9;">
+  <div>{{ loop.index }}. <a href="{{ r.html_url }}" style="color:#2f6df6;font-weight:600;text-decoration:none;">{{ r.full_name }}</a>
+    <span style="color:#5d6671;font-size:13px;">+{{ r.gain }}⭐ · {{ r.cat_emoji }} {{ r.cat_name }}</span></div>
+  {% if r.one_liner %}<div>{{ r.one_liner }}</div>{% endif %}
+</td></tr>
+{% endfor %}
+{% if enough %}
+<tr><td style="padding:16px 4px 2px;font-size:16px;font-weight:700;">✅ Se confirment</td></tr>
+{% for r in confirmed %}<tr><td style="padding:2px 4px;"><a href="{{ r.html_url }}" style="color:#2f6df6;text-decoration:none;">{{ r.full_name }}</a> <span style="color:#5d6671;">· {{ r.days_in_top }} jours</span></td></tr>{% else %}<tr><td style="padding:2px 4px;color:#5d6671;">Aucun projet cette semaine.</td></tr>{% endfor %}
+<tr><td style="padding:16px 4px 2px;font-size:16px;font-weight:700;">💨 Feux de paille</td></tr>
+{% for r in flashes %}<tr><td style="padding:2px 4px;"><a href="{{ r.html_url }}" style="color:#2f6df6;text-decoration:none;">{{ r.full_name }}</a> <span style="color:#5d6671;">· +{{ r.gain }}⭐</span></td></tr>{% else %}<tr><td style="padding:2px 4px;color:#5d6671;">Aucun projet cette semaine.</td></tr>{% endfor %}
+{% else %}
+<tr><td style="padding:12px 4px;color:#5d6671;">ℹ️ Historique encore court : « se confirment » et « feux de paille » apparaîtront après quelques jours.</td></tr>
+{% endif %}
+{% if top_category %}<tr><td style="padding:16px 4px;"><b>🔥 Catégorie la plus active :</b> {{ top_category }} (+{{ top_gain }}⭐ cumulées)</td></tr>{% endif %}
+{% endif %}
+
+<tr><td style="padding:20px 4px 4px;">
+  <a href="{{ page_url }}" style="display:inline-block;background:#2f6df6;color:#ffffff;text-decoration:none;font-weight:600;padding:10px 16px;border-radius:8px;">📊 Rapport complet et archives</a>
+</td></tr>
+<tr><td style="padding:10px 4px;color:#5d6671;font-size:12px;">🧪 facile à essayer · 🔥HN discuté sur Hacker News · 🆕 nouveau · ↑↓ rang vs hier · 🔁 ≥ 3 jours · ≈ chiffre estimé<br>Généré le {{ generated }} · Données : GitHub, Hacker News</td></tr>
+</table>
+</td></tr></table>
+</body></html>

@@ -276,6 +276,44 @@ def render_weekly(env: Environment, cfg: dict, week: dict, day: str, now: dateti
         top_gain=fmt_int(tc["gain"]) if tc else None, page_url=page_url, generated=now.strftime("%Y-%m-%d %H:%M UTC"))
 
 
+def render_email(env: Environment, cfg: dict, day: str, top: list[dict], watch: list[dict], trends: dict,
+                 now: datetime, page_url: str) -> str:
+    """Version e-mail du rapport du jour : styles en ligne, sans JavaScript ni variables CSS."""
+    views = []
+    for r in top:
+        v = to_view(r, cfg, None, now)
+        v["badge_texts"] = badge_parts(r) + (["🧪"] if r.get("easy_try") else [])
+        views.append(v)
+    n_pod = cfg["podium"]
+    by_cat: dict[str, list[dict]] = {}
+    for v in views[n_pod:]:
+        by_cat.setdefault(v["cat_id"], []).append(v)
+    order = sorted(by_cat, key=lambda c: min(x["rank"] for x in by_cat[c]))
+    cats = [c for cid in order for c in cfg["categories"] if c["id"] == cid]
+    wviews = [{**w, "s24": fmt_int(w["stars_24h"])} for w in watch]
+    return env.get_template("email.html.j2").render(
+        kind="daily", title=f"AI Radar — {fr_date(day)}", subtitle=f"Top {cfg['top_n']} IA open source · {fr_date(day)}",
+        podium=views[:n_pod], cats=cats, by_cat=by_cat, trends=trends, watch=wviews, page_url=page_url,
+        generated=now.strftime("%Y-%m-%d %H:%M UTC"))
+
+
+def render_email_weekly(env: Environment, cfg: dict, week: dict, day: str, now: datetime, page_url: str) -> str:
+    cats = {c["id"]: c for c in cfg["categories"]}
+
+    def view(r: dict) -> dict:
+        c = cats.get(r.get("category"), cfg["categories"][0])
+        return {**r, "cat_emoji": c["emoji"], "cat_name": c["name"], "gain": fmt_int(r.get("gain_7d", 0))}
+
+    tc = week.get("top_category")
+    return env.get_template("email.html.j2").render(
+        kind="weekly", title="AI Radar — récap de la semaine",
+        subtitle=f"Récap de la semaine · {fr_date(week['start'], False)} → {fr_date(day, False)}",
+        top10=[view(r) for r in week["top10"]], confirmed=[view(r) for r in week["confirmed"]],
+        flashes=[view(r) for r in week["flashes"]], enough=week["enough_history"],
+        top_category=(f"{cats[tc['id']]['emoji']} {cats[tc['id']]['name']}" if tc and tc["id"] in cats else None),
+        top_gain=fmt_int(tc["gain"]) if tc else None, page_url=page_url, generated=now.strftime("%Y-%m-%d %H:%M UTC"))
+
+
 def archive_list(docs: Path) -> list[dict]:
     """Liste des pages existantes dans docs/ (jours et semaines), du plus récent au plus ancien."""
     out = []

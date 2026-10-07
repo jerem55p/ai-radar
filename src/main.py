@@ -200,6 +200,13 @@ def run(args: argparse.Namespace, cfg: dict, state: State, now: datetime, today:
                                    render.archive_list(docs), url)
     (docs / "index.html").write_text(index_html, encoding="utf-8")
 
+    email_html = render.render_email(env, cfg, today, shown, watch, enr.trends, now, url)
+    week_email_html = render.render_email_weekly(env, cfg, week, today, now, url) if is_sunday else None
+    if args.dry_run:
+        (docs.parent / "email.html").write_text(email_html, encoding="utf-8")
+        if week_email_html:
+            (docs.parent / "email-semaine.html").write_text(week_email_html, encoding="utf-8")
+
     # 8. journal ---------------------------------------------------------------------------------------------
     log_top30(extended[:30])
     log.info("Requêtes API GitHub : %d (dont %d Search) sur un budget de %d · appels Claude : %d · durée : %.0f s",
@@ -218,9 +225,12 @@ def run(args: argparse.Namespace, cfg: dict, state: State, now: datetime, today:
     state.save(ROOT / "data" / "history.json")
     log.info("history.json sauvegardé (%d dépôts, %d purgés)", len(state.repos), removed)
     if cfg["channel"] == "email":
-        notify.send_email(f"AI Radar — {render.fr_date(today)}", index_html)
-        if week_html:
-            notify.send_email(f"AI Radar — récap de la semaine ({today})", week_html)
+        sep = "\n\n"
+        notify.send_email(f"🤖 AI Radar — {render.fr_date(today)}", email_html,
+                          sep.join(plain_text(m) for m in tg))
+        if week_email_html:
+            notify.send_email(f"📅 AI Radar — récap de la semaine ({today})", week_email_html,
+                              sep.join(plain_text(m) for m in week_msgs))
     else:
         n = notify.send_telegram(tg + week_msgs)
         log.info("%d message(s) Telegram envoyé(s)", n)
@@ -272,7 +282,7 @@ def main(argv: list[str] | None = None) -> int:
         msg = f"{type(exc).__name__}: {exc}"
         log.exception("Erreur fatale")
         if not args.dry_run:
-            notify.send_alert(msg)
+            notify.send_alert(msg, cfg.get("channel", "telegram"))
         return 1
 
 

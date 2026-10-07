@@ -66,15 +66,19 @@ def send_telegram(messages: list[str], token: str | None = None, chat_id: str | 
     return sent
 
 
-def send_alert(text: str) -> None:
+def send_alert(text: str, channel: str = "telegram") -> None:
     """Alerte courte en cas d'erreur fatale. Ne lève jamais d'exception."""
+    msg = f"⚠️ AI Radar a échoué : {text[:300]}"
     try:
-        send_telegram([f"⚠️ AI Radar a échoué : {text[:300]}"])
+        if channel == "email":
+            send_email("⚠️ AI Radar a échoué", f"<p>{msg}</p><p>Détails : onglet Actions du dépôt GitHub.</p>", msg)
+        else:
+            send_telegram([msg])
     except Exception as exc:  # noqa: BLE001
         log.error("Impossible d'envoyer l'alerte : %s", exc)
 
 
-def send_email(subject: str, html_body: str) -> None:
+def send_email(subject: str, html_body: str, text_body: str | None = None) -> None:
     host = os.environ.get("SMTP_HOST")
     user = os.environ.get("SMTP_USER")
     password = os.environ.get("SMTP_PASSWORD")
@@ -84,7 +88,7 @@ def send_email(subject: str, html_body: str) -> None:
         raise NotifyError("SMTP_HOST / SMTP_USER / SMTP_PASSWORD / EMAIL_TO manquants")
     msg = EmailMessage()
     msg["Subject"], msg["From"], msg["To"] = subject, user, to
-    msg.set_content("Ce rapport est au format HTML.")
+    msg.set_content(text_body or "Ce rapport est au format HTML.")
     msg.add_alternative(html_body, subtype="html")
     try:
         if port == 465:

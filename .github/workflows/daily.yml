@@ -50,6 +50,11 @@ jobs:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }} # optionnel : résumés en français
+          SMTP_HOST: ${{ secrets.SMTP_HOST }}                 # canal e-mail (config.yaml : channel: email)
+          SMTP_PORT: ${{ secrets.SMTP_PORT }}
+          SMTP_USER: ${{ secrets.SMTP_USER }}
+          SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}         # mot de passe d'application Gmail
+          EMAIL_TO: ${{ secrets.EMAIL_TO }}
         run: |
           if [ "${{ inputs.weekly }}" = "true" ]; then ARGS="--weekly"; else ARGS=""; fi
           python -m src.main $ARGS

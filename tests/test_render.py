@@ -1,3 +1,4 @@
+import pytest
 import re
 
 from src import render
@@ -155,3 +156,70 @@ def test_weekly_page_and_message(cfg, now):
     msgs = render.build_weekly_telegram(week, cfg, "2026-10-11", "https://u/semaine.html")
     assert len(msgs) == 1 and "TOP 10 DE LA SEMAINE" in msgs[0] and "Se confirment" in msgs[0]
     assert "Catégorie la plus active" in msgs[0]
+
+
+# ------------------------------------------------------------------ e-mail ----
+def test_email_html_is_self_contained(cfg, now):
+    from pathlib import Path
+
+    env = render.make_env(Path(__file__).resolve().parent.parent / "templates")
+    top = fake_top(cfg)
+    html_ = render.render_email(env, cfg, "2026-10-07", top, [], {"agents": "Tendance du jour"}, now,
+                                "https://jerem55p.github.io/ai-radar/")
+    assert html_.count('href="https://github.com/') >= 20  # liens absolus vers les dépôts
+    assert "https://jerem55p.github.io/ai-radar/" in html_
+    assert "<script" not in html_ and "var(--" not in html_ and "<style" not in html_  # compatible clients mail
+    assert "Podium" in html_ and "Tendance du jour" in html_
+
+
+def test_send_email_builds_multipart_and_hides_password(monkeypatch):
+    from src import notify
+
+    sent = {}
+
+    class FakeSMTP:
+        def __init__(self, host, port, **kw):
+            sent["host"], sent["port"] = host, port
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *a):
+            return False
+
+        def login(self, user, pwd):
+            sent["login"] = (user, pwd)
+
+        def send_message(self, msg):
+            sent["msg"] = msg
+
+    monkeypatch.setattr(notify.smtplib, "SMTP_SSL", FakeSMTP)
+    for k, v in {"SMTP_HOST": "smtp.gmail.com", "SMTP_USER": "me@gmail.com", "SMTP_PASSWORD": "app-pass-xyz",
+                 "EMAIL_TO": "me@gmail.com", "SMTP_PORT": "465"}.items():
+        monkeypatch.setenv(k, v)
+    notify.send_email("Sujet", "<p>Bonjour</p>", "Bonjour")
+    msg = sent["msg"]
+    assert msg["To"] == "me@gmail.com" and msg["Subject"] == "Sujet"
+    assert msg.get_body(("plain",)).get_content().strip() == "Bonjour"
+    assert "<p>Bonjour</p>" in msg.get_body(("html",)).get_content()
+
+
+def test_send_email_missing_config_and_failure_never_leak(monkeypatch):
+    import smtplib
+
+    from src import notify
+
+    for k in ("SMTP_HOST", "SMTP_USER", "SMTP_PASSWORD", "EMAIL_TO"):
+        monkeypatch.delenv(k, raising=False)
+    with pytest.raises(notify.NotifyError):
+        notify.send_email("s", "<p>x</p>")
+    for k, v in {"SMTP_HOST": "h", "SMTP_USER": "u@x.com", "SMTP_PASSWORD": "SECRET-PASS"}.items():
+        monkeypatch.setenv(k, v)
+
+    def boom(*a, **k):
+        raise smtplib.SMTPAuthenticationError(535, b"bad SECRET-PASS")
+
+    monkeypatch.setattr(notify.smtplib, "SMTP_SSL", boom)
+    with pytest.raises(notify.NotifyError) as exc:
+        notify.send_email("s", "<p>x</p>")
+    assert "SECRET-PASS" not in str(exc.value)
